@@ -1,11 +1,11 @@
 define(function() {
-  
+
   /**
    * Utility Functions
    */
-   
+
   var toString = Object.prototype.toString;
-  
+
   var isArray = function(arr) {
     return toString.call(arr) === '[object Array]';
   };
@@ -13,24 +13,24 @@ define(function() {
   var isFunction = function(fn) {
     return toString.call(fn) === '[object Function]';
   };
-  
+
   var indexOf = function(arr, search) {
     for (var i = 0, length = arr.length; i < length; i++) {
       if (arr[i] === search) {
         return i;
       }
     }
-    
+
     return -1;
   };
-  
+
   var each = function(obj, iterator, context) {
     var breaker = {};
-    
+
     if (obj === null) {
       return;
     }
-    
+
     if (Array.prototype.forEach && obj.forEach === Array.prototype.forEach) {
       obj.forEach(iterator, context);
     } else if (obj.length === +obj.length) {
@@ -49,28 +49,28 @@ define(function() {
       }
     }
   };
-  
+
   /**
    * Require.js Abstractions
    */
-  
+
   var getContext = function(id) {
     return requirejs.s.contexts[id];
   };
-  
+
   var undef = function(context, module) {
     if (context.undef) {
       return context.undef(module);
     }
-    
+
     return context.require.undef(module);
   };
-  
+
   /**
    * Create a context name incrementor.
    */
   var idCounter = 0;
-  var uniqueId = function(prefix) {
+  var uniqueId = function() {
     var id = idCounter++;
     return 'context' + id;
   };
@@ -95,7 +95,6 @@ define(function() {
    */
   Squire.prototype.configure = function(context) {
     var configuration = {};
-    var property;
 
     this.id = uniqueId();
 
@@ -122,7 +121,6 @@ define(function() {
   };
 
   Squire.prototype.mock = function(path, mock) {
-    var alias;
     if (typeof path === 'object') {
       each(path, function(alias, key) {
         this.mock(key, alias);
@@ -152,14 +150,14 @@ define(function() {
   Squire.prototype.require = function(dependencies, callback, errback) {
     var magicModuleName = 'mocks';
     var self = this;
-    var path, magicModuleLocation;
+    var magicModuleLocation;
 
     magicModuleLocation = indexOf(dependencies, magicModuleName);
 
     if (magicModuleLocation !== -1) {
       dependencies.splice(magicModuleLocation, 1);
     }
-    
+
     each(this.mocks, function(mock, path) {
       define(path, mock);
     });
@@ -167,7 +165,6 @@ define(function() {
     this.load(dependencies, function() {
       var store = {};
       var args = Array.prototype.slice.call(arguments);
-      var dependency;
 
       if (magicModuleLocation !== -1) {
         each(self._store, function(dependency) {
@@ -181,7 +178,7 @@ define(function() {
       }
 
       callback.apply(null, args);
-      
+
       each(self.requiredCallbacks, function(cb) {
         cb.call(null, dependencies, args);
       });
@@ -189,8 +186,6 @@ define(function() {
   };
 
   Squire.prototype.clean = function(mock) {
-    var path;
-
     if (mock && typeof mock === 'string') {
       undef(getContext(this.id), mock);
       delete this.mocks[mock];
@@ -208,15 +203,13 @@ define(function() {
   };
 
   Squire.prototype.remove = function() {
-    var path;
-    
     each(getContext(this.id).defined, function(dependency, path) {
       undef(getContext(this.id), path);
     }, this);
-    
+
     delete requirejs.s.contexts[this.id];
   };
-  
+
   Squire.prototype.run = function(deps, callback) {
     var self = this;
     var run = function(done) {
@@ -225,11 +218,11 @@ define(function() {
         done();
       });
     };
-    
+
     run.toString = function() {
       return callback.toString();
     };
-    
+
     return run;
   };
 
